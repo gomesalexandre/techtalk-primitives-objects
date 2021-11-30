@@ -1,0 +1,301 @@
+import Test from './test-component';
+export const testProp = 50;
+import prismTheme from 'react-syntax-highlighter/dist/cjs/styles/prism/material-dark';
+import {CodePane, Quote, Heading, Grid, UnorderedList, ListItem} from 'spectacle'
+
+
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+    <Heading>Memoization done right in react</Heading>
+    <Heading fontSize="h2">React, redux, reselect:</Heading>
+    <Heading fontSize="h5">And a special guest: The dreaded pointers 👉👻</Heading>
+</Grid>
+---
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+    <Heading fontSize="h6">A talk about react/redux/reselect with almost 0 mentions of react/redux/reselect because it's actually about JavaScript and pointers and once you understand the fundamentals concepts of this talk and you have a strong mental model for it, their implementation will make sense</Heading>
+</Grid>
+
+---
+
+# Takeaways
+
+- Understand reference vs. value access
+- Understand shallow vs. strict equality
+- Memoize and compare more efficiently!
+
+---
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+    <Heading>This is not extensive</Heading>
+</Grid>
+
+---
+
+# Getting the semantics right
+
+JavaScript is [object-based](https://tc39.es/ecma262/#sec-ecmascript-overview).
+
+Only 2 types of values in JavaScript:
+
+- Primitive values
+- All the others (objects)
+---
+
+# Primitive values ([Spec](https://tc39.es/ecma262/#sec-primitive-value)):
+ 
+- Undefined
+- Null
+- String
+- Number
+- Boolean
+- BigInt
+- Symbol*
+
+---
+
+
+# Objects
+ 
+Everything that's not a primitive!
+
+---
+
+# Objects
+ 
+
+Function objects ([Spec](https://tc39.es/ecma262/#table-additional-essential-internal-methods-of-function-objects))
+
+<CodePane theme={prismTheme} language="javascript">
+  {
+  `function() {
+    console.log("That's an object")
+}`
+  }
+</CodePane >
+---
+
+
+# Objects
+ 
+Array objects 🌴 ([Spec](https://tc39.es/ecma262/#sec-array-objects))
+
+<CodePane theme={prismTheme} language="javascript">
+  {
+  `['also', 'an', 'object!']`
+  }
+</CodePane >
+
+---
+
+# Objects
+ 
+
+Object objects ([Spec](https://tc39.es/ecma262/#sec-object-objects))
+
+<CodePane theme={prismTheme} language="javascript">
+  {
+  `
+  {
+    yep: {
+      obviously: {
+        an: 'object'
+      }
+    }
+  }`
+  }
+</CodePane >
+
+```javascript
+
+```
+
+
+---
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+    <Heading>What's the difference anyway?</Heading>
+</Grid>
+
+---
+## Primitive value
+
+- easy to deal with for JS:
+- "Give me the **real** value of that expression"
+- JS directly access their intricate value
+---
+
+
+## Objects
+
+- More complex
+- JS can't see their "intricate" value 
+- New expression = new memory location
+- As a human, I see the same when comparing
+- JS sees 2 totally different locations!
+
+
+---
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+  <Quote>Primitives are accessed by value, objects are accessed by reference.</Quote>
+</Grid>
+
+---
+
+# [Demo 1](https://codesandbox.io/s/goofy-banzai-bjxet?file=/src/index.js)
+
+---
+
+<Grid style={{height: '100%', alignItems: 'center'}}>
+    <Heading>How is that related to comparision / memoization?</Heading>
+</Grid>
+
+---
+
+# Directly!
+
+- Comparisons are done by value (42 === 42)
+- Comparing different references will always return false
+
+---
+
+# react/redux/reselect
+
+- Directly dealing with props - objects
+- Used for the rerender logic
+
+---
+
+<Grid style={{height: '100%', justifyItems:'center', alignItems: 'center'}}>
+    <img src="https://i.giphy.com/media/10bKPDUM5H7m7u/giphy.webp" />
+    <Heading>Shallow Comparison to the rescue</Heading>
+</Grid>
+
+---
+
+# Shallow Comparison
+
+
+<Grid gridAutoFlow='column' style={{height: '100%', justifyContent: 'center'}}>
+    <UnorderedList>
+      <ListItem>Doesn't just do <code>objectA === objectB</code></ListItem>
+      <ListItem>Instead, compares the value of each key</ListItem>
+    </UnorderedList>
+    <img style={{maxHeight: '75%'}} src="https://c.tenor.com/HxpXTj_kUq0AAAAd/quality-control-minions.gif" />
+</Grid>
+
+---
+
+# Shallow comparison
+
+- Compares the **value** of each key with ===
+- One-level deep
+- Will return **false if value of key is another object**! 🙅
+
+[Demo 2](https://codesandbox.io/s/goofy-banzai-bjxet?file=/src/index.js)
+
+---
+
+# react
+
+- by default: no shallow comparison
+- with React.memo / useMemo() : shallow comparison
+
+---
+
+# react-redux
+
+- connect uses [shallowEqual()](https://github.com/reduxjs/react-redux/blob/master/src/utils/shallowEqual.ts) for mapStateToProps return value
+- each key in your mapStateToProps object should point to same reference! ⚠️ 
+
+---
+
+# reselect
+
+- Creates a memoized selector with createSelector() fn
+- Possibly complex derivations - shouldn't be ran more than necessary!
+- Outputs same reference for same (===) output
+
+---
+
+# reselect - createSelector caveats
+
+- More power: same reference = happy shallowEqual 😊
+- More responsibility: "Same inputs"
+- "Bad" news: `createSelector` uses === equality
+
+---
+
+# reselect - "Same inputs"
+
+- 2 options
+  - No unstable references ⚠️ : Don't return anything else than primitives in root selectors
+  - Use custom comparison
+
+---
+
+# Passing only primitives
+
+<CodePane theme={prismTheme} language="javascript">
+{`
+// state.createdTime === 'Mon Nov 29 2021 14:05:19 GMT+0100 (Central European Standard Time)'
+const unstableSelector = createSelector(
+  state => new Date(state.createdTime), // Unstable output from root selector
+  createdTime => {
+    // do some heavy computation
+    // return something after heavy computation
+  }
+  )
+);
+`}
+</CodePane >
+
+---
+
+# Passing only primitives
+
+<CodePane theme={prismTheme} language="javascript">
+{`
+const stableSelector = createSelector(
+  state => state.createdTime, // ✅ String is a primitive output, stable
+  createdTime => {
+    // do some heavy computation
+    // return something after heavy computation
+  }
+  )
+);
+`}
+</CodePane >
+
+---
+
+# Custom comparison ([Demo](https://codesandbox.io/s/hopeful-scott-vh82p?file=/src/index.js))
+
+<CodePane theme={prismTheme} language="javascript">
+{`
+import { createSelectorCreator, defaultMemoize } from 'reselect';
+// create a "selector creator" that uses a custom comparison fn
+const dateCompare = (dateA, dateB) => dateA.getTime() === dateB.getTime();
+const createDateCompareSelector = createSelectorCreator(defaultMemoize, dateCompare)
+const stableSelector = createDateCompareSelector(
+  state => new Date(state.createdTime), // Unstable output but it's ok now
+  createdTime => {
+    // do some heavy computation
+    // return something after heavy computation
+  }
+)
+`}
+</CodePane >
+---
+
+# Conclusion
+
+<Grid gridAutoFlow='column' style={{height: '100%', justifyContent: 'center'}}>
+    <UnorderedList>
+      <ListItem>It's all about referential stability</ListItem>
+      <ListItem>Non-exhaustive: Always check which equality is used by which tool</ListItem>
+      <ListItem>Unsure? Create minimal repro and run subsequent calls manually!</ListItem>
+    </UnorderedList>
+    <img style={{maxHeight: '75%'}} src="https://i.giphy.com/media/QMHoU66sBXqqLqYvGO/giphy.webp" />
+</Grid>
