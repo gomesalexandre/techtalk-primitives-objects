@@ -180,7 +180,7 @@ Object objects ([Spec](https://tc39.es/ecma262/#sec-object-objects))
 <Grid gridAutoFlow='column' style={{height: '100%', justifyContent: 'center'}}>
     <UnorderedList>
       <ListItem>Doesn't just do <code>objectA === objectB</code></ListItem>
-      <ListItem>Instead, compares the value of each key</ListItem>
+      <ListItem>Instead, compares each property</ListItem>
     </UnorderedList>
     <img style={{maxHeight: '75%'}} src="https://c.tenor.com/HxpXTj_kUq0AAAAd/quality-control-minions.gif" />
 </Grid>
@@ -191,7 +191,7 @@ Object objects ([Spec](https://tc39.es/ecma262/#sec-object-objects))
 
 - Compares the **value** of each key with ===
 - One-level deep
-- Will return **false if value of key is another object**! 🙅
+- Will return **false** if one property is another object! 🙅
 
 [Demo 2](https://codesandbox.io/s/goofy-banzai-bjxet?file=/src/index.js)
 
@@ -207,7 +207,7 @@ Object objects ([Spec](https://tc39.es/ecma262/#sec-object-objects))
 # react-redux
 
 - connect uses [shallowEqual()](https://github.com/reduxjs/react-redux/blob/master/src/utils/shallowEqual.ts) for mapStateToProps return value
-- each key in your mapStateToProps object should point to same reference! ⚠️ 
+- each property in your mapStateToProps object should point to same reference! ⚠️ 
 
 ---
 
